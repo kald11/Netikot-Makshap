@@ -1,5 +1,6 @@
 from core.classes.NetworkComponent import NetworkComponent
 
+
 class Nvr(NetworkComponent):
     def __init__(self, port, password):
         super().__init__(port, password)

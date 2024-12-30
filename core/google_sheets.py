@@ -1,12 +1,14 @@
 from config.settings import Config
 import gspread
 from utils.utils import columns_to_rows_array, array_to_df, convert_to_sites_array
+from pathlib import Path
 
 
 class GoogleSheets:
 
     def __init__(self):
         self.config = Config().get_config()
+        self.open_folder()
         self.connection = gspread.service_account(
             filename=self.config["google_sheets"]["service_account_path"])
         spread_sheet = self.connection.open(self.config["google_sheets"]["spreadsheet_name"])
@@ -25,3 +27,11 @@ class GoogleSheets:
 
     def get_columns_values(self, columns_indexes):
         return [self.worksheet.col_values(col)[1:] for col in columns_indexes]
+
+    def open_folder(self):
+        file_path = Path(self.config["google_sheets"]["service_account_path"])  # Relative path to the file
+
+        if file_path.is_file():  # Checks if it's a valid file
+            print("File exists! You can open it.")
+        else:
+            print("File does NOT exist!")
