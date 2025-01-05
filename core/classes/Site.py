@@ -1,3 +1,6 @@
+from core.classes.Results import Results
+
+
 class Site:
     def __init__(self, site_name, ip, camera, nvr, modem):
         self.prot = "http"
@@ -7,6 +10,7 @@ class Site:
         self.nvr = nvr
         self.modem = modem
         self.is_ping = False
+        self.results = Results()
 
     def get_camera_url(self):
         return f'{self.prot}://{self.ip}:{self.camera.port}'
