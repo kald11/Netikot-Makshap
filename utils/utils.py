@@ -1,11 +1,13 @@
+import threading
+
 import pandas as pd
+
 from core.classes.Site import Site
 from core.classes.company.Dahua import Dahua
 from core.classes.company.Hikvision import Hikvision
 from core.classes.networkComponents.Camera import Camera
-from core.classes.networkComponents.Nvr import Nvr
 from core.classes.networkComponents.Modem import Modem
-import threading
+from core.classes.networkComponents.Nvr import Nvr
 
 
 # ----------------------- Arrays and df functions -----------------------
@@ -21,11 +23,21 @@ def convert_to_sites_array(df):
     data = []
     for index, row in df.iterrows():
         camera, nvr, modem = _init_classes(row)
-        site = Site(row["Site Name"], row["IP Address"], camera, nvr, modem)
+        site = Site(row["Site Name"], row["IP Address"], camera, nvr, modem, row["Brigade"], row["Camera Id"])
         item = _check_company(row, site)
         if item is not None:
             data.append(item)
     return data
+
+
+def get_results_array(cameras_array):
+    results_array = []
+    for camera in cameras_array:
+        results_array.append([camera.site.brigade, camera.site.site_name, camera.site.ip, camera.site.camera.number,
+                              camera.site.camera_id, camera.company_name,
+                              "V" if camera.site.results.is_camera_ping else "X",
+                              "V" if camera.site.results.is_nvr_ping else "X"])
+    return results_array
 
 
 # ----------------------- Threads functions -----------------------
