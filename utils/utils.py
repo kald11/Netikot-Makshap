@@ -1,11 +1,11 @@
+import threading
 import pandas as pd
 from core.classes.Site import Site
 from core.classes.company.Dahua import Dahua
 from core.classes.company.Hikvision import Hikvision
 from core.classes.networkComponents.Camera import Camera
-from core.classes.networkComponents.Nvr import Nvr
 from core.classes.networkComponents.Modem import Modem
-import threading
+from core.classes.networkComponents.Nvr import Nvr
 
 
 # ----------------------- Arrays and df functions -----------------------
