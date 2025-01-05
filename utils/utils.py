@@ -1,10 +1,11 @@
 import pandas as pd
 from core.classes.Site import Site
-from core.classes.Dahua import Dahua
-from core.classes.Hikvision import Hikvision
-from core.classes.Camera import Camera
-from core.classes.Nvr import Nvr
-from core.classes.Modem import Modem
+from core.classes.company.Dahua import Dahua
+from core.classes.company.Hikvision import Hikvision
+from core.classes.networkComponents.Camera import Camera
+from core.classes.networkComponents.Nvr import Nvr
+from core.classes.networkComponents.Modem import Modem
+import threading
 
 
 # ----------------------- Arrays and df functions -----------------------
@@ -20,19 +21,33 @@ def convert_to_sites_array(df):
     data = []
     for index, row in df.iterrows():
         camera, nvr, modem = _init_classes(row)
-        site = Site(row["site_name"], row["ip"], camera, nvr, modem)
+        site = Site(row["Site Name"], row["IP Address"], camera, nvr, modem)
         item = _check_company(row, site)
-        if item is None:
+        if item is not None:
             data.append(item)
     return data
+
+
+# ----------------------- Threads functions -----------------------
+def use_thread(cameras_array, worker):
+    threads = []
+
+    for camera in cameras_array:
+        thread = threading.Thread(target=worker, args=(camera,))
+        threads.append(thread)
+        thread.start()
+
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
 
 
 # ----------------------- Private Functions -----------------------
 
 def _init_classes(row):
-    camera = Camera(row["id"], row["password"], row["number"], row["id"])
-    nvr = Nvr(password=row["nvr password"], port=row["nvr_port"])
-    modem = Modem(port=row["modem_port"], password=row["modem_password"])
+    camera = Camera(port=row["Camera Port"], password=row["Camera Password"], number=row["Camera Number"])
+    nvr = Nvr(password=row["NVR Password"], port=row["NVR Port"])
+    modem = Modem(port=row["Modem Port"], password=row["Modem Password"])
     return camera, nvr, modem
 
 

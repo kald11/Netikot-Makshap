@@ -15,7 +15,11 @@ class Company(ABC):
         pass
 
     @abstractmethod
-    def ping(self):
+    def ping_camera(self):
+        pass
+
+    @abstractmethod
+    def ping_nvr(self):
         pass
 
     def get_company_name(self):

@@ -2,4 +2,4 @@ google_sheets:
   service_account_path: "./config/gspread/creds.json"
   spreadsheet_name: "Netikot input"
   worksheet_name: "dc data"
-  desired_column_names: ["Site Name","IP Address","Company","Camera Port","Camera Password","NVR Port","NVR Password","Modem Port","Modem Password","Camera Number","Camera Id"]
+  desired_column_names: ["Site Name","IP Address","Company","Camera Port","Camera Password","NVR Port","NVR Password","Modem Port","Modem Password",'Camera Number',"Camera Id"]

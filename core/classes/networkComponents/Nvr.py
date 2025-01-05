@@ -1,4 +1,4 @@
-from core.classes.NetworkComponent import NetworkComponent
+from core.classes.networkComponents.NetworkComponent import NetworkComponent
 
 
 class Nvr(NetworkComponent):

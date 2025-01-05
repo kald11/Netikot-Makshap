@@ -1,4 +1,4 @@
-from core.classes.Company import Company
+from core.classes.company.Company import Company
 
 
 class Dahua(Company):
@@ -14,6 +14,4 @@ class Dahua(Company):
         # Add the implementation here
         pass
 
-    def ping(self):
-        # Add the implementation here
-        pass
+

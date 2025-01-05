@@ -1,4 +1,4 @@
-from core.classes.Company import Company
+from core.classes.company.Company import Company
 
 
 class Hikvision(Company):
@@ -13,5 +13,4 @@ class Hikvision(Company):
     def get_camera_time(self):
         pass
 
-    def ping(self):
-        pass
+

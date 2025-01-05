@@ -8,7 +8,6 @@ class GoogleSheets:
 
     def __init__(self):
         self.config = Config().get_config()
-        self.open_folder()
         self.connection = gspread.service_account(
             filename=self.config["google_sheets"]["service_account_path"])
         spread_sheet = self.connection.open(self.config["google_sheets"]["spreadsheet_name"])
@@ -23,15 +22,9 @@ class GoogleSheets:
 
     def convert_column_names_to_indexes(self, column_names):
         headers = self.worksheet.row_values(1)
-        return [headers.index(name) for name in column_names if name in headers]
+        return [headers.index(name)+1 for name in column_names if name in headers]
 
     def get_columns_values(self, columns_indexes):
         return [self.worksheet.col_values(col)[1:] for col in columns_indexes]
 
-    def open_folder(self):
-        file_path = Path(self.config["google_sheets"]["service_account_path"])  # Relative path to the file
 
-        if file_path.is_file():  # Checks if it's a valid file
-            print("File exists! You can open it.")
-        else:
-            print("File does NOT exist!")
