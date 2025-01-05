@@ -1,11 +1,11 @@
 from core.google_sheets import GoogleSheets
-
-
+from core.services import NetikotService
 def main():
-    df = GoogleSheets().get_data()
-    print(df.values)
-    print("maor")
-    print("change") 
+    camera_array = GoogleSheets().get_data()
+    service = NetikotService(camera_array)
+    service.ping_cameras()
+    service.get_camera_data()
+
 
 
 if __name__ == "__main__":
