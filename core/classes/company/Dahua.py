@@ -13,7 +13,7 @@ class Dahua(Company):
 
     def ping_nvr(self):
         is_nvr_ping = ping(self.site.prot, self.site.ip, self.site.nvr.port)
-        self.site.results.is_camera_ping = is_nvr_ping
+        self.site.results.is_nvr_ping = is_nvr_ping
 
     def get_captures(self):
         # Add the implementation here

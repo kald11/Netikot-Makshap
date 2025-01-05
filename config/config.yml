@@ -1,7 +1,8 @@
 google_sheets:
   service_account_path: "./config/gspread/creds.json"
   spreadsheet_name: "Netikot input"
-  worksheet_name: "dc data"
-  desired_column_names: [ "Site Name","IP Address","Company","Camera Port","Camera Password","NVR Port","NVR Password","Modem Port","Modem Password",'Camera Number',"Camera Id" ]
+  input_worksheet_name: "dc data"
+  output_worksheet_name: "Results"
+  desired_column_names: [ "Brigade","Site Name","IP Address","Company","Camera Port","Camera Password","NVR Port","NVR Password","Modem Port","Modem Password",'Camera Number',"Camera Id" ]
 project_setup:
   timeout_ping: 30 # Seconds
