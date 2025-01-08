@@ -2,7 +2,8 @@ import time
 
 from config.settings import Config
 import gspread
-from utils.utils import columns_to_rows_array, array_to_df, convert_to_sites_array
+from utils.utils import columns_to_rows_array, array_to_df
+from utils.parse_site import convert_to_sites_array
 
 
 class GoogleSheets:
@@ -36,4 +37,6 @@ class GoogleSheets:
         return [self.input_worksheet.col_values(col)[1:] for col in columns_indexes]
 
     def upload_data(self, data):
-        self.output_worksheet.insert_rows(data, row=2)
+        start_cell = "A2"
+        self.output_worksheet.update(start_cell, data)
+

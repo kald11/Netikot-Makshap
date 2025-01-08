@@ -7,10 +7,10 @@ gs = GoogleSheets()
 def main():
     camera_array = gs.get_data()
     service = NetikotService(camera_array)
-    results_array = service.ping()
+    service.ping()
+    service.get_camera_data()
+    results_array = service.get_results()
     gs.upload_data(data=results_array)
-
-    # service.get_camera_data()
 
 
 if __name__ == "__main__":

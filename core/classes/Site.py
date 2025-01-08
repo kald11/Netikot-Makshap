@@ -1,17 +1,20 @@
-from core.classes.Results import Results
+from config.settings import Config
+from requests.auth import HTTPDigestAuth
 
 
 class Site:
-    def __init__(self, site_name, ip, camera, nvr, modem,brigade,camera_id):
+    def __init__(self, site_name, ip, camera, nvr, modem, brigade, camera_id):
+        self.config = Config().get_config()
         self.prot = "http"
         self.site_name = site_name
         self.ip = ip
         self.camera = camera
         self.nvr = nvr
         self.modem = modem
-        self.results = Results()
+
         self.brigade = brigade
         self.camera_id = camera_id
+        self.credentials = HTTPDigestAuth(self.config["project_setup"]["username"], nvr.password)
 
     def get_camera_url(self):
         return f'{self.prot}://{self.ip}:{self.camera.port}'
@@ -21,4 +24,3 @@ class Site:
 
     def __str__(self):
         return f"Site Name: {self.site_name},IP: {self.ip}, Cameras: {self.camera}, NVR: {self.nvr}, Modem: {self.modem}"
-

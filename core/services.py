@@ -1,6 +1,7 @@
 import time
 
-from utils.utils import use_thread, get_results_array
+from utils.parse_site import get_results_array
+from utils.utils import use_thread
 
 
 class NetikotService:
@@ -15,17 +16,28 @@ class NetikotService:
         def worker(camera):
             camera.ping_camera()
             camera.ping_nvr()
+
         use_thread(self.cameras_array, worker)
 
-        results = get_results_array(self.cameras_array)
         end = time.perf_counter()
         execution_time = end - start
-        print(f"----------------------- Fetch Data ends in {execution_time:.6f} seconds ------------------------------")
-        return results
+        print(f"----------------------- Ping sites ends in {execution_time:.6f} seconds ------------------------------")
 
     def get_camera_data(self):
+        self._login_cameras()
+
         def worker(camera):
-            camera.get_captures()
-            camera.get_current_time()
+            if camera.flags["login_ok"]:
+                camera.get_camera_time()
 
         use_thread(self.cameras_array, worker)
+        x = 1
+
+    def _login_cameras(self):
+        def worker(camera):
+            camera.try_login()
+
+        use_thread(self.cameras_array, worker)
+
+    def get_results(self):
+        return get_results_array(self.cameras_array)

@@ -1,13 +1,8 @@
 import threading
-
+from collections import OrderedDict
+from datetime import datetime
+from config.settings import Config
 import pandas as pd
-
-from core.classes.Site import Site
-from core.classes.company.Dahua import Dahua
-from core.classes.company.Hikvision import Hikvision
-from core.classes.networkComponents.Camera import Camera
-from core.classes.networkComponents.Modem import Modem
-from core.classes.networkComponents.Nvr import Nvr
 
 
 # ----------------------- Arrays and df functions -----------------------
@@ -19,25 +14,23 @@ def array_to_df(data):
     return pd.DataFrame(data[1:], columns=data[0])
 
 
-def convert_to_sites_array(df):
-    data = []
-    for index, row in df.iterrows():
-        camera, nvr, modem = _init_classes(row)
-        site = Site(row["Site Name"], row["IP Address"], camera, nvr, modem, row["Brigade"], row["Camera Id"])
-        item = _check_company(row, site)
-        if item is not None:
-            data.append(item)
-    return data
+def filter_unconnected_cameras(array):
+    return [camera for camera in array if camera.flags.get("is_nvr_ping")]
 
 
-def get_results_array(cameras_array):
-    results_array = []
-    for camera in cameras_array:
-        results_array.append([camera.site.brigade, camera.site.site_name, camera.site.ip, camera.site.camera.number,
-                              camera.site.camera_id, camera.company_name,
-                              "V" if camera.site.results.is_camera_ping else "X",
-                              "V" if camera.site.results.is_nvr_ping else "X"])
-    return results_array
+def ordered_dict_to_dict(d):
+    if isinstance(d, OrderedDict):
+        d = dict(d)
+        for k, v in list(d.items()):
+            d[k] = ordered_dict_to_dict(v)
+    elif isinstance(d, list):
+        for i in range(len(d)):
+            d[i] = ordered_dict_to_dict(d[i])
+    elif d == "false":
+        d = False
+    elif d == "True":
+        d = True
+    return d
 
 
 # ----------------------- Threads functions -----------------------
@@ -54,21 +47,7 @@ def use_thread(cameras_array, worker):
         thread.join()
 
 
-# ----------------------- Private Functions -----------------------
-
-def _init_classes(row):
-    camera = Camera(port=row["Camera Port"], password=row["Camera Password"], number=row["Camera Number"])
-    nvr = Nvr(password=row["NVR Password"], port=row["NVR Port"])
-    modem = Modem(port=row["Modem Port"], password=row["Modem Password"])
-    return camera, nvr, modem
-
-
-def _check_company(row, site):
-    if row["Company"] == "Dahua":
-        item = Dahua(site)
-    elif row["Company"] == "Hikvision":
-        item = Hikvision(site)
-    else:
-        print(f"Unknown company: {row['Company']}, for site: {row['site_name']} (ID: {row['id']})")
-        item = None
-    return item
+# ----------------------- Formats ----------------------------------
+def datetime_format(local_time):
+    format = Config().get_config()["project_setup"]["format_datetime"]
+    return datetime.strptime(local_time, format)
