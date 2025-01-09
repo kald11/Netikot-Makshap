@@ -25,13 +25,8 @@ class NetikotService:
 
     def get_camera_data(self):
         self._login_cameras()
-
-        def worker(camera):
-            if camera.flags["login_ok"]:
-                camera.get_camera_time()
-
-        use_thread(self.cameras_array, worker)
-        x = 1
+        self._get_camera_time()
+        self._get_captures()
 
     def _login_cameras(self):
         def worker(camera):
@@ -41,3 +36,17 @@ class NetikotService:
 
     def get_results(self):
         return get_results_array(self.cameras_array)
+
+    def _get_captures(self):
+        def worker(camera):
+            if camera.flags["login_ok"]:
+                camera.get_captures()
+
+        use_thread(self.cameras_array, worker)
+
+    def _get_camera_time(self):
+        def worker(camera):
+            if camera.flags["login_ok"]:
+                camera.get_camera_time()
+
+        use_thread(self.cameras_array, worker)
