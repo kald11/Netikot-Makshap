@@ -24,16 +24,19 @@ class Hikvision(Company):
     def try_login(self):
         if self.flags["is_nvr_ping"]:
             try:
-                res = requests.get(f"{self._prefix_isapi}/system/status", auth=self.site.credentials, timeout=self.timeout)
+                res = requests.get(f"{self._prefix_isapi}/System/status", auth=self.site.credentials,
+                                   timeout=self.timeout)
                 if res.ok:
                     self.flags["login_ok"] = True
 
                 else:
-                    res = requests.get(f"{self._prefix_psia}/system/status", auth=self.site.credentials, timeout=self.timeout)
+                    res = requests.get(f"{self._prefix_psia}/System/status", auth=self.site.credentials,
+                                       timeout=self.timeout)
 
                     if res.status_code == 401:  # old models don't support Digest Auth
                         new_credentials = (self.username, self.password)
-                        res = requests.get(f"{self._prefix_psia}/system/status", auth=new_credentials, timeout=self.timeout)
+                        res = requests.get(f"{self._prefix_psia}/System/status", auth=new_credentials,
+                                           timeout=self.timeout)
 
                     self.flags["login_ok"] = res.ok
 
@@ -73,13 +76,13 @@ class Hikvision(Company):
     def _get_device_info(self):
         if self.flags["login_ok"]:
             try:
-                r = self.session.get(f"{self._prefix_isapi}/system/deviceInfo", auth=self.site.credentials,
+                r = self.session.get(f"{self._prefix_isapi}/System/deviceInfo", auth=self.site.credentials,
                                      timeout=self.timeout)
                 if r.ok:
                     r = ordered_dict_to_dict(xmltodict.parse(r.text))["DeviceInfo"]
                     self.device_info = (r["model"], int(r["firmwareVersion"][1:].split('.')[0]))
                 else:
-                    r = self.session.get(f"{self._prefix_psia}/system/deviceInfo", auth=self.site.credentials,
+                    r = self.session.get(f"{self._prefix_psia}/System/deviceInfo", auth=self.site.credentials,
                                          timeout=self.timeout)
                     if r.ok:
                         r = ordered_dict_to_dict(xmltodict.parse(r.text))["DeviceInfo"]
@@ -113,17 +116,18 @@ class Hikvision(Company):
 
     def get_captures(self):
         # LPR check
-        if self.device_info in [("DS-TP50-16E", 4), ("DS-TP50-16E", 5), ("DS-TP50-12DT", 4),
-                                ('DS-TP50-12DT', 5), ('DS-TP50-04H',
-                                                      5), ('DS-TP50-08H', 5)]:  # model index 1
+        if self.device_info in [("DS-TP50-16E", 4), ("DS-TP50-16E", 5), ("DS-TP50-12DT", 4), ('DS-TP50-12DT', 5),
+                                ('DS-TP50-04H', 5), ('DS-TP50-08H', 5)]:  # model index 1
             try:
-                response = self._get_data_model_1(index=0,)
+                response = self._get_data_model_1(index=0, )
 
             except:
-                x=1
+                x = 1
+        else:
+            print(f"Not found model ip: {self.site.ip}:90 ,camera number:{self.site.camera.number}")
 
     def _get_data_model_1(self, index):
-        start_time= "2025-01-09T00:00:00Z"
+        start_time = "2025-01-09T00:00:00Z"
         end_time = "2025-01-09T23:59:59Z"
         data_request_xml_base = f'''
                             <DataOperation>
@@ -147,19 +151,10 @@ class Hikvision(Company):
                                 </searchCond>
                             </DataOperation>'''
 
-        data = self.session.post(f"{self._prefix_isapi}/Traffic/ContentMgmt/dataOperation",
-                                 auth=self.site.credentials,
-                                 data=data_request_xml_base,
-                                 timeout=self.timeout)
+        data = self.session.post(f"{self._prefix_isapi}/Traffic/ContentMgmt/dataOperation", auth=self.site.credentials,
+                                 data=data_request_xml_base, timeout=self.timeout)
 
         if data.ok:
-            x=1
-            # data = ordered_dict_to_dict(xmltodict.parse(data.text))["TrafficSearchResult"]
-            # pic_amount = int(self.get_amount_pictures(cam_number=cam_id, model=1, data=data))
-            # if int(data["numOfMatches"]) > 0:
-            #     if len(data['matchList']['matchElement']) > 1:
-            #         return data['matchList']['matchElement'][-1]['trafficData']['captureTime'], data[
-            #             'totalMatches'], pic_amount
-            #     return data['matchList']['matchElement']['trafficData']['captureTime'], data['totalMatches']
+            x = 1  # data = ordered_dict_to_dict(xmltodict.parse(data.text))["TrafficSearchResult"]  # pic_amount = int(self.get_amount_pictures(cam_number=cam_id, model=1, data=data))  # if int(data["numOfMatches"]) > 0:  #     if len(data['matchList']['matchElement']) > 1:  #         return data['matchList']['matchElement'][-1]['trafficData']['captureTime'], data[  #             'totalMatches'], pic_amount  #     return data['matchList']['matchElement']['trafficData']['captureTime'], data['totalMatches']
 
         return "", '', 0

@@ -25,12 +25,13 @@ class NetikotService:
 
     def get_camera_data(self):
         self._login_cameras()
-        self._get_camera_time()
         self._get_captures()
+        self._get_camera_time()
 
     def _login_cameras(self):
         def worker(camera):
-            camera.try_login()
+            if camera.flags["is_nvr_ping"]:
+                camera.try_login()
 
         use_thread(self.cameras_array, worker)
 
