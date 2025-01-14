@@ -23,4 +23,4 @@ class Site:
         return f'{self.prot}://{self.ip}:{self.nvr.port}'
 
     def __str__(self):
-        return f"Site Name: {self.site_name},IP: {self.ip}, Cameras: {self.camera}, NVR: {self.nvr}, Modem: {self.modem}"
+        return f"Site Name: {self.site_name},IP: {self.ip}:{self.nvr.port} {self.nvr.password}, Camera Number: {self.camera.number}"

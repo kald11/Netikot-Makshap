@@ -1,4 +1,5 @@
 import threading
+import uuid
 from collections import OrderedDict
 from datetime import datetime
 from config.settings import Config
@@ -51,3 +52,97 @@ def use_thread(cameras_array, worker):
 def datetime_format(local_time):
     format = Config().get_config()["project_setup"]["format_datetime"]
     return datetime.strptime(local_time, format)
+
+
+def get_body_by_model(model, index, start_time, end_time, camera_number):
+    search_id = str(uuid.uuid4())
+    match model:
+        case 1:
+            return f'''
+                                   <DataOperation>
+                                       <operationType>search</operationType>
+                                       <searchCond>
+                                           <searchID>{search_id}</searchID>
+                                           <timeSpanList>
+                                               <timeSpan>
+                                                   <startTime>{start_time}</startTime>
+                                                   <endTime>{end_time}</endTime>
+                                               </timeSpan>
+                                           </timeSpanList>
+                                           <criteria>
+                                               <dataType>0</dataType>
+                                               <channel>{camera_number}</channel>
+                                               <violationType>0</violationType>
+                                               <surveilType>0</surveilType>
+                                               <analysised>true</analysised>
+                                           </criteria>
+                                           <searchResultPosition>{index}</searchResultPosition>                                    
+                                       </searchCond>
+                                   </DataOperation>'''
+        case 2:
+            return f'''
+            <CMSearchDescription>
+                <searchID>{search_id}</searchID>
+                <trackList>
+                    <trackID>{camera_number}03</trackID>
+                </trackList>
+                <timeSpanList>
+                    <timeSpan>
+                        <startTime>{start_time}</startTime>
+                        <endTime>{end_time}</endTime>
+                    </timeSpan>
+                </timeSpanList>
+                <contentTypeList>
+                    <contentType>metadata</contentType>
+                </contentTypeList>                
+                <maxResults>50</maxResults>
+                <searchResultPostion>100</searchResultPostion>                
+                <metadataList>
+                    <metadataDescriptor>//recordType.meta.std-cgi.com/vehicleDetection</metadataDescriptor>
+                    <SearchProperity>
+                        <country>255</country>
+                    </SearchProperity>                  
+                </metadataList>
+            </CMSearchDescription>'''
+        case 3:
+            return f'''
+            <CMSearchDescription>
+                <searchID>{search_id}</searchID>
+                <trackList>
+                    <trackID>{camera_number}03</trackID>
+                </trackList>
+                <timeSpanList>
+                    <timeSpan>
+                        <startTime>{start_time}</startTime>
+                        <endTime>{end_time}</endTime>
+                    </timeSpan>
+                </timeSpanList>
+                <contentTypeList>
+                    <contentType>picture</contentType>
+                </contentTypeList>
+                <maxResults>5000</maxResults>                
+                <searchResultPostion>{index}</searchResultPostion>
+                <metadataList>
+                    <metadataDescriptor>//recordType.meta.std-cgi.com/allPic</metadataDescriptor>
+                </metadataList>
+
+            </CMSearchDescription>'''
+
+        case 4:
+            return f'''<CMSearchDescription>
+                        <searchID>{search_id}</searchID>
+                        <timeSpanList>
+                            <timeSpan>
+                                <startTime>{start_time}</startTime>
+                                <endTime>{end_time}</endTime>
+                            </timeSpan>
+                        </timeSpanList>
+                        <critera>
+                            <channel>{camera_number}</channel>
+                            <surveilType>0</surveilType>
+                            <dataType>0</dataType>
+                            <violationType>0</violationType>
+                        </critera>
+                        <searchResultPostion>{index}</searchResultPostion>
+                        <maxResults>5000</maxResults>
+                    </CMSearchDescription>'''

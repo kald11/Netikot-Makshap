@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
-
+from utils.utils import get_body_by_model
 import requests
 import xmltodict
 
@@ -20,6 +20,7 @@ class Hikvision(Company):
         self.timeout = self.site.config["project_setup"]["times"]["timeout_ping"]
         self.username = self.site.config["project_setup"]["username"]
         self.password = self.site.nvr.password
+        self.model = None
 
     def try_login(self):
         if self.flags["is_nvr_ping"]:
@@ -61,11 +62,11 @@ class Hikvision(Company):
         try:
             self._define_check_time()
             if self.device_info in [('TS-5012-F', 4), ("DS-TP50-12DT", 4)]:
-                res = self.session.get(f"{self._prefix_psia}/system/time", auth=self.site.credentials,
+                res = self.session.get(f"{self._prefix_psia}/System/time", auth=self.site.credentials,
                                        timeout=self.timeout)
                 self.times["current_camera_time"] = self._extract_date(res)
             else:
-                res = self.session.get(f"{self._prefix_isapi}/system/time", auth=self.site.credentials,
+                res = self.session.get(f"{self._prefix_isapi}/System/time", auth=self.site.credentials,
                                        timeout=self.timeout)
                 self.times["current_camera_time"] = self._extract_date(res)
             self._compare_between_dates()
@@ -82,7 +83,7 @@ class Hikvision(Company):
                     r = ordered_dict_to_dict(xmltodict.parse(r.text))["DeviceInfo"]
                     self.device_info = (r["model"], int(r["firmwareVersion"][1:].split('.')[0]))
                 else:
-                    r = self.session.get(f"{self._prefix_psia}/System/deviceInfo", auth=self.site.credentials,
+                    r = self.session.get(f"{self._prefix_psia}/system/deviceInfo", auth=self.site.credentials,
                                          timeout=self.timeout)
                     if r.ok:
                         r = ordered_dict_to_dict(xmltodict.parse(r.text))["DeviceInfo"]
@@ -90,8 +91,31 @@ class Hikvision(Company):
 
                 if self.device_info in [('TS-5012-F', 4)]:  # some models don't support Digest Auth
                     self.site.credentials = (self.site.config["project_setup"]["username"], self.site.nvr.password)
+                self._get_model()
+
             except Exception as e:
                 print("Error getting device information, error {}".format(e))
+
+    def _get_model(self):
+        match self.device_info:
+            case ("DS-TP50-16E", 4) | ("DS-TP50-16E", 5) | ("DS-TP50-12DT", 4) | ("DS-TP50-12DT", 5) | ("DS-TP50-04H",
+                                                                                                        5) | (
+                     "DS-TP50-08H", 5):
+                # model index 1
+                self.model = 1
+
+            case ("DS-7604NI-E1/A", 3) | ("DS-7608NI-G2/4P", 3) | ("DS-7608NI-E2/A", 3) | ("DS-M5504HNI", 5) | (
+                "DS-7604NI-K1", 4) | ("DS-7604NI-K1(B)", 3):
+                # model index 2
+                self.model = 2
+
+            case ("DS-TP50-12DT", 4) | ("TS-5012-F", 4):
+                # model index 3
+                self.model = 3
+
+            case _:
+                print("Unknown device:")
+                print(self.site)
 
     def _define_check_time(self):
         format = self.site.config["project_setup"]["format_datetime"]
@@ -116,45 +140,90 @@ class Hikvision(Company):
 
     def get_captures(self):
         # LPR check
-        if self.device_info in [("DS-TP50-16E", 4), ("DS-TP50-16E", 5), ("DS-TP50-12DT", 4), ('DS-TP50-12DT', 5),
-                                ('DS-TP50-04H', 5), ('DS-TP50-08H', 5)]:  # model index 1
-            try:
-                response = self._get_data_model_1(index=0, )
+        match self.model:
+            case 1:
+                self._get_data_model_1()
+            case 2:
+                self._get_data_model_2()
+            case 3:
+                self._get_data_model_3()
 
-            except:
-                x = 1
-        else:
-            print(f"Not found model ip: {self.site.ip}:90 ,camera number:{self.site.camera.number}")
+    def check_unknowns(self):
+        self.get_captures()
+        unkonwn_counter = 0
+        if self.captures["num_captures"] != "" and self.model == 1:
+            for index in range(0, int(self.captures["num_captures"]) + 1, 100):
+                xml_body = self._get_request_params(index, self.model)
+                response = self.session.post(f"{self._prefix_isapi}/Traffic/ContentMgmt/dataOperation",
+                                             auth=self.site.credentials,
+                                             data=xml_body,
+                                             timeout=self.timeout)
 
-    def _get_data_model_1(self, index):
-        start_time = "2025-01-09T00:00:00Z"
-        end_time = "2025-01-09T23:59:59Z"
-        data_request_xml_base = f'''
-                            <DataOperation>
-                                <operationType>search</operationType>
-                                <searchCond>
-                                    <searchID>{str(uuid.uuid4())}</searchID>
-                                    <timeSpanList>
-                                        <timeSpan>
-                                            <startTime>{start_time}</startTime>
-                                            <endTime>{end_time}</endTime>
-                                        </timeSpan>
-                                    </timeSpanList>
-                                    <criteria>
-                                        <dataType>0</dataType>
-                                        <channel>{self.site.camera.number}</channel>
-                                        <violationType>0</violationType>
-                                        <surveilType>0</surveilType>
-                                        <analysised>true</analysised>
-                                    </criteria>
-                                    <searchResultPosition>{index}</searchResultPosition>                                    
-                                </searchCond>
-                            </DataOperation>'''
+                if response.ok:
+                    unkonwn_counter += len([element for element in
+                                            ordered_dict_to_dict(xmltodict.parse(response.text))['TrafficSearchResult'][
+                                                'matchList']['matchElement'] if
+                                            element["trafficData"]["plate"] == "unknown"])
+            self.unknown_percent_morning = unkonwn_counter/self.captures["num_captures"]
 
-        data = self.session.post(f"{self._prefix_isapi}/Traffic/ContentMgmt/dataOperation", auth=self.site.credentials,
-                                 data=data_request_xml_base, timeout=self.timeout)
+    def _get_data_model_1(self):
+        try:
+            xml_body = self._get_request_params(index=0, model=1)
 
-        if data.ok:
-            x = 1  # data = ordered_dict_to_dict(xmltodict.parse(data.text))["TrafficSearchResult"]  # pic_amount = int(self.get_amount_pictures(cam_number=cam_id, model=1, data=data))  # if int(data["numOfMatches"]) > 0:  #     if len(data['matchList']['matchElement']) > 1:  #         return data['matchList']['matchElement'][-1]['trafficData']['captureTime'], data[  #             'totalMatches'], pic_amount  #     return data['matchList']['matchElement']['trafficData']['captureTime'], data['totalMatches']
+            response = self.session.post(f"{self._prefix_isapi}/Traffic/ContentMgmt/dataOperation",
+                                         auth=self.site.credentials,
+                                         data=xml_body,
+                                         timeout=self.timeout)
 
-        return "", '', 0
+            if response.ok:
+                self._parse_data_response(response)
+            # elif response.status_code == 503:
+            #     print(self.site)
+            #     print(response.text)
+        except Exception as e:
+            print(e)
+
+    def _get_data_model_2(self):
+        xml_body = self._get_request_params(index=0, model=2)
+        response = self.session.post(f"{self._prefix_isapi}/ContentMgmt/search", auth=self.site.credentials,
+                                     data=xml_body,
+                                     timeout=self.timeout)
+
+        if response.ok:
+            x = 1
+        # TODO: Add logic when add more cameras
+
+    def _get_data_model_3(self):
+        xml_body = self._get_request_params(index=0, model=4)
+        response = self.session.post(f"{self._prefix_psia}/Custom/SelfExt/ContentMgmt/Traffic/Search",
+                                     auth=self.site.credentials,
+                                     data=xml_body,
+                                     timeout=self.timeout)
+        if response.ok:
+            x = 1
+
+    def _get_request_params(self, index, model,type =None):
+        start_time = ""
+        format = "%Y-%m-%dT%H:%M:%SZ"
+        end_time = datetime.utcnow()
+        if type is None:
+            start_time = end_time - timedelta(hours=3)
+            start_time = start_time.strftime(format)
+            end_time = end_time.strftime(format)
+
+        elif type == 'morning':
+            start_time = '2025-01-13T10:00:00Z'
+            end_time = '2025-01-13T11:00:00Z'
+
+        elif  type == 'night':
+            start_time = '2025-01-13T22:00:00Z'
+            end_time = '2025-01-13T23:00:00Z'
+
+        data_request_xml = get_body_by_model(model=model, index=index, start_time=start_time, end_time=end_time,
+                                             camera_number=self.site.camera.number)
+        return data_request_xml
+
+    def _parse_data_response(self, response):
+        data = ordered_dict_to_dict(xmltodict.parse(response.text))["TrafficSearchResult"]
+        total_matches = data["totalMatches"]
+        self.captures["num_captures"] = total_matches
