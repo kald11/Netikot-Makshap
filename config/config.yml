@@ -1,5 +1,5 @@
 google_sheets:
-  service_account_path: "./config/gspread/creds.json"
+  service_account_path: "config\\gspread\\creds.json"
   spreadsheet_name: "Netikot input"
   input_worksheet_name: "dc data"
   output_worksheet_name: "Results"

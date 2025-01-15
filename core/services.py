@@ -25,8 +25,8 @@ class NetikotService:
 
     def get_camera_data(self):
         self._login_cameras()
-        # self._get_captures()
-        self._get_unknowns()
+        self._get_captures()
+        # self._get_unknowns()
         self._get_camera_time()
 
     def _login_cameras(self):

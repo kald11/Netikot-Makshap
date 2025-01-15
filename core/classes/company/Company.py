@@ -10,6 +10,7 @@ class Company(ABC):
         self.times = {"check_time": "", "current_camera_time": "", "is_synchronized": False}
         self.unknown_percent_morning = 0.0
         self.unknown_percent_night = 0.0
+        self.error_message = ""
 
     @abstractmethod
     def get_captures(self):

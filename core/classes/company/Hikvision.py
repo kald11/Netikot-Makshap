@@ -1,12 +1,11 @@
-import uuid
 from datetime import datetime, timedelta
+from requests.exceptions import ConnectionError
 from utils.utils import get_body_by_model
 import requests
 import xmltodict
-
 from core.classes.company.Company import Company
 from utils.network_helpers import ping
-from utils.utils import ordered_dict_to_dict, datetime_format
+from utils.utils import parse_text_to_dict, datetime_format
 
 
 class Hikvision(Company):
@@ -80,13 +79,13 @@ class Hikvision(Company):
                 r = self.session.get(f"{self._prefix_isapi}/System/deviceInfo", auth=self.site.credentials,
                                      timeout=self.timeout)
                 if r.ok:
-                    r = ordered_dict_to_dict(xmltodict.parse(r.text))["DeviceInfo"]
+                    r = parse_text_to_dict(xmltodict.parse(r.text))["DeviceInfo"]
                     self.device_info = (r["model"], int(r["firmwareVersion"][1:].split('.')[0]))
                 else:
                     r = self.session.get(f"{self._prefix_psia}/system/deviceInfo", auth=self.site.credentials,
                                          timeout=self.timeout)
                     if r.ok:
-                        r = ordered_dict_to_dict(xmltodict.parse(r.text))["DeviceInfo"]
+                        r = parse_text_to_dict(xmltodict.parse(r.text))["DeviceInfo"]
                         self.device_info = (r["model"], int(r["firmwareVersion"][1:].split('.')[0]))
 
                 if self.device_info in [('TS-5012-F', 4)]:  # some models don't support Digest Auth
@@ -126,7 +125,7 @@ class Hikvision(Company):
         if response.status_code != 200:
             return ""
         data = response.text
-        current_time_camera = ordered_dict_to_dict(xmltodict.parse(data))["Time"]["localTime"].replace('T', ' ')[:-6]
+        current_time_camera = parse_text_to_dict(xmltodict.parse(data))["Time"]["localTime"].replace('T', ' ')[:-6]
         return current_time_camera
 
     def _compare_between_dates(self):
@@ -139,7 +138,6 @@ class Hikvision(Company):
         self.times["is_synchronized"] = diff < timedelta(minutes=time_diff)
 
     def get_captures(self):
-        # LPR check
         match self.model:
             case 1:
                 self._get_data_model_1()
@@ -150,7 +148,7 @@ class Hikvision(Company):
 
     def check_unknowns(self):
         self.get_captures()
-        unkonwn_counter = 0
+        unknown_counter = 0
         if self.captures["num_captures"] != "" and self.model == 1:
             for index in range(0, int(self.captures["num_captures"]) + 1, 100):
                 xml_body = self._get_request_params(index, self.model)
@@ -160,11 +158,11 @@ class Hikvision(Company):
                                              timeout=self.timeout)
 
                 if response.ok:
-                    unkonwn_counter += len([element for element in
-                                            ordered_dict_to_dict(xmltodict.parse(response.text))['TrafficSearchResult'][
+                    unknown_counter += len([element for element in
+                                            parse_text_to_dict(xmltodict.parse(response.text))['TrafficSearchResult'][
                                                 'matchList']['matchElement'] if
                                             element["trafficData"]["plate"] == "unknown"])
-            self.unknown_percent_morning = unkonwn_counter/self.captures["num_captures"]
+            self.unknown_percent_morning = unknown_counter / self.captures["num_captures"]
 
     def _get_data_model_1(self):
         try:
@@ -177,11 +175,31 @@ class Hikvision(Company):
 
             if response.ok:
                 self._parse_data_response(response)
-            # elif response.status_code == 503:
-            #     print(self.site)
-            #     print(response.text)
+            elif response.status_code == 503:
+                self._handle_retry_request()
+
         except Exception as e:
-            print(e)
+            if isinstance(e, ConnectionError):
+                self.error_message = "בעיית תקשורת/בעיית קליטה"
+            else:
+                print(f"An exception occurred: {e}")
+                self.error_message = "בעיית צד פיתוח"
+
+    def _handle_retry_request(self):
+        retry_xml_body = self._get_request_params(0, "retry_request")
+        response = self.session.post(
+            f"{self._prefix_isapi}/Traffic/ContentMgmt/dataOperation",
+            auth=self.site.credentials,
+            data=retry_xml_body,
+            timeout=self.timeout
+        )
+        if response.ok:
+            self._parse_data_response(response)
+
+    def _parse_data_response(self, response):
+        data = parse_text_to_dict(xmltodict.parse(response.text))["TrafficSearchResult"]
+        total_matches = data["totalMatches"]
+        self.captures["num_captures"] = total_matches
 
     def _get_data_model_2(self):
         xml_body = self._get_request_params(index=0, model=2)
@@ -202,7 +220,7 @@ class Hikvision(Company):
         if response.ok:
             x = 1
 
-    def _get_request_params(self, index, model,type =None):
+    def _get_request_params(self, index, model, type=None):
         start_time = ""
         format = "%Y-%m-%dT%H:%M:%SZ"
         end_time = datetime.utcnow()
@@ -215,15 +233,10 @@ class Hikvision(Company):
             start_time = '2025-01-13T10:00:00Z'
             end_time = '2025-01-13T11:00:00Z'
 
-        elif  type == 'night':
+        elif type == 'night':
             start_time = '2025-01-13T22:00:00Z'
             end_time = '2025-01-13T23:00:00Z'
 
         data_request_xml = get_body_by_model(model=model, index=index, start_time=start_time, end_time=end_time,
                                              camera_number=self.site.camera.number)
         return data_request_xml
-
-    def _parse_data_response(self, response):
-        data = ordered_dict_to_dict(xmltodict.parse(response.text))["TrafficSearchResult"]
-        total_matches = data["totalMatches"]
-        self.captures["num_captures"] = total_matches

@@ -19,14 +19,14 @@ def filter_unconnected_cameras(array):
     return [camera for camera in array if camera.flags.get("is_nvr_ping")]
 
 
-def ordered_dict_to_dict(d):
+def parse_text_to_dict(d):
     if isinstance(d, OrderedDict):
         d = dict(d)
         for k, v in list(d.items()):
-            d[k] = ordered_dict_to_dict(v)
+            d[k] = parse_text_to_dict(v)
     elif isinstance(d, list):
         for i in range(len(d)):
-            d[i] = ordered_dict_to_dict(d[i])
+            d[i] = parse_text_to_dict(d[i])
     elif d == "false":
         d = False
     elif d == "True":
@@ -104,31 +104,9 @@ def get_body_by_model(model, index, start_time, end_time, camera_number):
                     </SearchProperity>                  
                 </metadataList>
             </CMSearchDescription>'''
+
+
         case 3:
-            return f'''
-            <CMSearchDescription>
-                <searchID>{search_id}</searchID>
-                <trackList>
-                    <trackID>{camera_number}03</trackID>
-                </trackList>
-                <timeSpanList>
-                    <timeSpan>
-                        <startTime>{start_time}</startTime>
-                        <endTime>{end_time}</endTime>
-                    </timeSpan>
-                </timeSpanList>
-                <contentTypeList>
-                    <contentType>picture</contentType>
-                </contentTypeList>
-                <maxResults>5000</maxResults>                
-                <searchResultPostion>{index}</searchResultPostion>
-                <metadataList>
-                    <metadataDescriptor>//recordType.meta.std-cgi.com/allPic</metadataDescriptor>
-                </metadataList>
-
-            </CMSearchDescription>'''
-
-        case 4:
             return f'''<CMSearchDescription>
                         <searchID>{search_id}</searchID>
                         <timeSpanList>
@@ -146,3 +124,38 @@ def get_body_by_model(model, index, start_time, end_time, camera_number):
                         <searchResultPostion>{index}</searchResultPostion>
                         <maxResults>5000</maxResults>
                     </CMSearchDescription>'''
+        case "retry_request":
+            return f"""<DataOperation>
+        <operationType>search</operationType>
+        <searchCond>
+            <searchID>{search_id}</searchID>
+            <timeSpanList>
+                <timeSpan>
+                    <startTime>{start_time}</startTime>
+                    <endTime>{end_time}</endTime>
+                </timeSpan>
+            </timeSpanList>
+            <criteria>
+                <dataType>0</dataType>
+                <violationType>0</violationType>
+                <channel>1</channel>
+                <plateType/>
+                <plateColor/>
+                <direction/>
+                <incidentCorrect/>
+                <plate/>
+                <speedMin/>
+                <speedMax/>
+                <vehicleType/>
+                <vehicleColor/>
+                <laneNo/>
+                <surveilType>0</surveilType>
+                <romoteHost/>
+                <analysised>true</analysised>
+                <sendFlag/>
+            </criteria>
+            <searchResultPosition>{index}</searchResultPosition>
+            <maxResults>100</maxResults>
+            <vehicleSubTypeList/>
+        </searchCond>
+    </DataOperation>"""

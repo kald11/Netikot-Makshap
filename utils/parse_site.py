@@ -12,6 +12,7 @@ def get_results_array(cameras_array):
         results_array.append([camera.site.brigade, camera.site.site_name, camera.site.ip, camera.site.camera.number,
                               camera.site.camera_id, camera.company_name, "V" if camera.flags["is_cam_ping"] else "X",
                               "V" if camera.flags["is_nvr_ping"] else "X", camera.captures["num_captures"],
+                              camera.error_message,
                               camera.times["current_camera_time"],
                               camera.times["check_time"], camera.times["is_synchronized"]])
     return results_array
