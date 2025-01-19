@@ -54,8 +54,43 @@ def datetime_format(local_time):
     return datetime.strptime(local_time, format)
 
 
-def get_body_by_model(model, index, start_time, end_time, camera_number):
+def get_body_by_model(model, index, start_time, end_time, camera_number, is_retry):
     search_id = str(uuid.uuid4())
+    if is_retry:
+        return f"""<DataOperation>
+        <operationType>search</operationType>
+        <searchCond>
+            <searchID>{search_id}</searchID>
+            <timeSpanList>
+                <timeSpan>
+                    <startTime>{start_time}</startTime>
+                    <endTime>{end_time}</endTime>
+                </timeSpan>
+            </timeSpanList>
+            <criteria>
+                <dataType>0</dataType>
+                <violationType>0</violationType>
+                <channel>1</channel>
+                <plateType/>
+                <plateColor/>
+                <direction/>
+                <incidentCorrect/>
+                <plate/>
+                <speedMin/>
+                <speedMax/>
+                <vehicleType/>
+                <vehicleColor/>
+                <laneNo/>
+                <surveilType>0</surveilType>
+                <romoteHost/>
+                <analysised>true</analysised>
+                <sendFlag/>
+            </criteria>
+            <searchResultPosition>{index}</searchResultPosition>
+            <maxResults>100</maxResults>
+            <vehicleSubTypeList/>
+        </searchCond>
+    </DataOperation>"""
     match model:
         case 1:
             return f'''
@@ -105,7 +140,6 @@ def get_body_by_model(model, index, start_time, end_time, camera_number):
                 </metadataList>
             </CMSearchDescription>'''
 
-
         case 3:
             return f'''<CMSearchDescription>
                         <searchID>{search_id}</searchID>
@@ -124,38 +158,3 @@ def get_body_by_model(model, index, start_time, end_time, camera_number):
                         <searchResultPostion>{index}</searchResultPostion>
                         <maxResults>5000</maxResults>
                     </CMSearchDescription>'''
-        case "retry_request":
-            return f"""<DataOperation>
-        <operationType>search</operationType>
-        <searchCond>
-            <searchID>{search_id}</searchID>
-            <timeSpanList>
-                <timeSpan>
-                    <startTime>{start_time}</startTime>
-                    <endTime>{end_time}</endTime>
-                </timeSpan>
-            </timeSpanList>
-            <criteria>
-                <dataType>0</dataType>
-                <violationType>0</violationType>
-                <channel>1</channel>
-                <plateType/>
-                <plateColor/>
-                <direction/>
-                <incidentCorrect/>
-                <plate/>
-                <speedMin/>
-                <speedMax/>
-                <vehicleType/>
-                <vehicleColor/>
-                <laneNo/>
-                <surveilType>0</surveilType>
-                <romoteHost/>
-                <analysised>true</analysised>
-                <sendFlag/>
-            </criteria>
-            <searchResultPosition>{index}</searchResultPosition>
-            <maxResults>100</maxResults>
-            <vehicleSubTypeList/>
-        </searchCond>
-    </DataOperation>"""

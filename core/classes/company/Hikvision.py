@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+
+import pytz
 from requests.exceptions import ConnectionError
 from utils.utils import get_body_by_model
 import requests
@@ -146,23 +148,65 @@ class Hikvision(Company):
             case 3:
                 self._get_data_model_3()
 
-    def check_unknowns(self):
-        self.get_captures()
-        unknown_counter = 0
-        if self.captures["num_captures"] != "" and self.model == 1:
-            for index in range(0, int(self.captures["num_captures"]) + 1, 100):
-                xml_body = self._get_request_params(index, self.model)
-                response = self.session.post(f"{self._prefix_isapi}/Traffic/ContentMgmt/dataOperation",
-                                             auth=self.site.credentials,
-                                             data=xml_body,
-                                             timeout=self.timeout)
+    def check_unknowns(self, time_period):
+        """
+        Check unknown plates for the specified time period ('morning' or 'night').
+        """
+        try:
+            total_matches = self._get_total_matches(time_period)
+            if self.model == 1 and total_matches > 1:
+                unknown_count = self._count_unknown_plates(total_matches, time_period)
+                result = f"{unknown_count} / {total_matches} => {round(unknown_count / total_matches, 2) * 100}%"
 
-                if response.ok:
-                    unknown_counter += len([element for element in
-                                            parse_text_to_dict(xmltodict.parse(response.text))['TrafficSearchResult'][
-                                                'matchList']['matchElement'] if
-                                            element["trafficData"]["plate"] == "unknown"])
-            self.unknown_percent_morning = unknown_counter / self.captures["num_captures"]
+            elif total_matches <= 1:
+                result = "0/0"
+            if time_period == "morning":
+                self.unknown_morning = result
+            elif time_period == "night":
+                self.unknown_night = result
+
+        except Exception as error:
+            print(f"An exception occurred in check_unknowns ({time_period}): {error}")
+            print(self.site)
+            self.error_message = f"בעיית צד פיתוח בדיקת unknowns ב-{time_period}"
+
+    def _get_total_matches(self, time_period):
+        request_body = self._build_request_body(0, self.model, time_period)
+        response = self._send_request(request_body)
+        if not response.ok:
+            request_body = self._build_request_body(0, self.model, time_period, True)
+            response = self._send_request(request_body)
+        return int(self._parse_total_matches(response))
+
+    def _count_unknown_plates(self, total_matches, time_period):
+        unknown_count = 0
+        for offset in range(0, total_matches + 1, 100):
+            request_body = self._build_request_body(offset, self.model, time_period)
+            response = self._send_request(request_body)
+            if not response.ok:
+                request_body = self._build_request_body(0, self.model, time_period, True)
+                response = self._send_request(request_body)
+            unknown_count += self._count_unknown_in_response(response)
+        return unknown_count
+
+    def _send_request(self, request_body):
+        return self.session.post(
+            f"{self._prefix_isapi}/Traffic/ContentMgmt/dataOperation",
+            auth=self.site.credentials,
+            data=request_body,
+            timeout=self.timeout,
+        )
+
+    def _parse_total_matches(self, response):
+        return parse_text_to_dict(xmltodict.parse(response.text))['TrafficSearchResult']['totalMatches']
+
+    def _count_unknown_in_response(self, response):
+        match_list = parse_text_to_dict(xmltodict.parse(response.text))['TrafficSearchResult']['matchList'][
+            'matchElement']
+        return len([match for match in match_list if match["trafficData"]["plate"] == "unknown"])
+
+    def _build_request_body(self, offset, model, time_period, is_retry=False):
+        return self._get_request_params(offset, model, time_period, is_retry)
 
     def _get_data_model_1(self):
         try:
@@ -186,7 +230,7 @@ class Hikvision(Company):
                 self.error_message = "בעיית צד פיתוח"
 
     def _handle_retry_request(self):
-        retry_xml_body = self._get_request_params(0, "retry_request")
+        retry_xml_body = self._get_request_params(index=0, model=self.model, is_retry=True)
         response = self.session.post(
             f"{self._prefix_isapi}/Traffic/ContentMgmt/dataOperation",
             auth=self.site.credentials,
@@ -220,23 +264,29 @@ class Hikvision(Company):
         if response.ok:
             x = 1
 
-    def _get_request_params(self, index, model, type=None):
-        start_time = ""
+    def _get_request_params(self, index, model, type=None, is_retry=False):
         format = "%Y-%m-%dT%H:%M:%SZ"
-        end_time = datetime.utcnow()
+        current_time = datetime.utcnow().replace(tzinfo=pytz.timezone('Asia/Jerusalem'))
+
         if type is None:
-            start_time = end_time - timedelta(hours=3)
-            start_time = start_time.strftime(format)
-            end_time = end_time.strftime(format)
+            start_time = (current_time - timedelta(hours=3)).strftime(format)
+            end_time = current_time.strftime(format)
 
         elif type == 'morning':
-            start_time = '2025-01-13T10:00:00Z'
-            end_time = '2025-01-13T11:00:00Z'
+            start_time = current_time.strftime("%Y-%m-%dT10:00:00Z")
+            end_time = current_time.strftime("%Y-%m-%dT11:00:00Z")
 
         elif type == 'night':
-            start_time = '2025-01-13T22:00:00Z'
-            end_time = '2025-01-13T23:00:00Z'
+            yesterday = current_time - timedelta(days=1)
+            start_time = yesterday.strftime("%Y-%m-%dT22:00:00Z")
+            end_time = yesterday.strftime("%Y-%m-%dT23:00:00Z")
 
-        data_request_xml = get_body_by_model(model=model, index=index, start_time=start_time, end_time=end_time,
-                                             camera_number=self.site.camera.number)
+        data_request_xml = get_body_by_model(
+            model=model,
+            index=index,
+            start_time=start_time,
+            end_time=end_time,
+            camera_number=self.site.camera.number,
+            is_retry=is_retry
+        )
         return data_request_xml

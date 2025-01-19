@@ -2,7 +2,8 @@ from core.google_sheets import GoogleSheets
 from core.services import NetikotService
 
 gs = GoogleSheets()
-site = gs.get_row(18)
+site = gs.get_row(8)
 site.flags["is_nvr_ping"] = True
 service = NetikotService([site])
-service.get_camera_data()
+service.login_cameras()
+service.unknowns()

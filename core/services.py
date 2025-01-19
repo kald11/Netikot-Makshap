@@ -24,12 +24,26 @@ class NetikotService:
         print(f"----------------------- Ping sites ends in {execution_time:.6f} seconds ------------------------------")
 
     def get_camera_data(self):
-        self._login_cameras()
-        self._get_captures()
-        # self._get_unknowns()
+        # self._get_captures()
+        self._get_unknowns()
         self._get_camera_time()
 
-    def _login_cameras(self):
+    def unknowns(self):
+        print("-------------- Unknowns is starting -------------------")
+        start = time.perf_counter()
+
+        def worker(camera):
+            if camera.flags["login_ok"] and camera.site.camera_id != "אווירה":
+                camera.check_unknowns("morning")
+                camera.check_unknowns("night")
+
+        use_thread(self.cameras_array, worker)
+
+        end = time.perf_counter()
+        execution_time = end - start
+        print(f"----------------------- Unknowns ends in {execution_time:.6f} seconds ------------------------------")
+
+    def login_cameras(self):
         def worker(camera):
             if camera.flags["is_nvr_ping"]:
                 camera.try_login()
@@ -56,6 +70,7 @@ class NetikotService:
     def _get_unknowns(self):
         def worker(camera):
             if camera.flags["login_ok"] and camera.site.camera_id != "אווירה":
-                camera.check_unknowns()
+                camera.check_unknowns("morning")
+                camera.check_unknowns("night")
 
         use_thread(self.cameras_array, worker)
