@@ -8,5 +8,6 @@ project_setup:
   times:
       check_minutes_diff: 5
       timeout_ping: 30 # Seconds
+      checkup_captures_hours: 4
   username: "admin"
   format_datetime: '%Y-%m-%d %H:%M:%S'

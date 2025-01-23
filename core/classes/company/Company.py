@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from utils.network_helpers import ping
 
 
 class Company(ABC):
@@ -11,6 +12,14 @@ class Company(ABC):
         self.unknown_morning = ""
         self.unknown_night = ""
         self.error_message = ""
+
+    def ping_camera(self):
+        is_cam_ping = ping(self.site.prot, self.site.ip, self.site.camera.port)
+        self.flags["is_cam_ping"] = is_cam_ping
+
+    def ping_nvr(self):
+        is_nvr_ping = ping(self.site.prot, self.site.ip, self.site.nvr.port)
+        self.flags["is_nvr_ping"] = is_nvr_ping
 
     @abstractmethod
     def get_captures(self):

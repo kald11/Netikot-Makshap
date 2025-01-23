@@ -17,7 +17,7 @@ def main_unknowns_check():
 
 
 if __name__ == "__main__":
-    main_unknowns_check()
+    # main_unknowns_check()
     main_captures()
     results_array = service.get_results()
     gs.upload_data(data=results_array)

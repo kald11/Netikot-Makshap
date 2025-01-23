@@ -131,7 +131,7 @@ def get_body_by_model(model, index, start_time, end_time, camera_number, is_retr
                     <contentType>metadata</contentType>
                 </contentTypeList>                
                 <maxResults>50</maxResults>
-                <searchResultPostion>100</searchResultPostion>                
+                <searchResultPostion>{index}</searchResultPostion>                
                 <metadataList>
                     <metadataDescriptor>//recordType.meta.std-cgi.com/vehicleDetection</metadataDescriptor>
                     <SearchProperity>

@@ -6,7 +6,7 @@ from utils.utils import get_body_by_model
 import requests
 import xmltodict
 from core.classes.company.Company import Company
-from utils.network_helpers import ping
+
 from utils.utils import parse_text_to_dict, datetime_format
 
 
@@ -50,14 +50,6 @@ class Hikvision(Company):
 
         else:
             self.flags["login_ok"] = False
-
-    def ping_camera(self):
-        is_cam_ping = ping(self.site.prot, self.site.ip, self.site.camera.port)
-        self.flags["is_cam_ping"] = is_cam_ping
-
-    def ping_nvr(self):
-        is_nvr_ping = ping(self.site.prot, self.site.ip, self.site.nvr.port)
-        self.flags["is_nvr_ping"] = is_nvr_ping
 
     def get_camera_time(self):
         try:
@@ -106,7 +98,8 @@ class Hikvision(Company):
                 self.model = 1
 
             case ("DS-7604NI-E1/A", 3) | ("DS-7608NI-G2/4P", 3) | ("DS-7608NI-E2/A", 3) | ("DS-M5504HNI", 5) | (
-                "DS-7604NI-K1", 4) | ("DS-7604NI-K1(B)", 3):
+                "DS-7604NI-K1", 4) | ("DS-7604NI-K1(B)", 3) | ('DS-7604NXI-K1', 4) | ('DS-7604NI-E1/A', 3) | (
+                     'DS-7608NXI-K2', 4):
                 # model index 2
                 self.model = 2
 
@@ -115,8 +108,12 @@ class Hikvision(Company):
                 self.model = 3
 
             case _:
-                print("Unknown device:")
-                print(self.site)
+                if self.site.camera_id != "אווירה":
+                    print("Unknown device:")
+                    print(self.site)
+                    print(self.device_info)
+                else:
+                    self.model = 2
 
     def _define_check_time(self):
         format = self.site.config["project_setup"]["format_datetime"]
@@ -166,9 +163,12 @@ class Hikvision(Company):
                 self.unknown_night = result
 
         except Exception as error:
-            print(f"An exception occurred in check_unknowns ({time_period}): {error}")
-            print(self.site)
-            self.error_message = f"בעיית צד פיתוח בדיקת unknowns ב-{time_period}"
+            if isinstance(error, ConnectionError):
+                self.error_message = "בעיית תקשורת/בעיית קליטה"
+            else:
+                print(f"An exception occurred in check_unknowns ({time_period}): {error}")
+                print(self.site)
+                self.error_message = f"בעיית צד פיתוח בדיקת unknowns ב-{time_period}"
 
     def _get_total_matches(self, time_period):
         request_body = self._build_request_body(0, self.model, time_period)
@@ -218,7 +218,7 @@ class Hikvision(Company):
                                          timeout=self.timeout)
 
             if response.ok:
-                self._parse_data_response(response)
+                self._parse_data_response_model_1(response)
             elif response.status_code == 503:
                 self._handle_retry_request()
 
@@ -227,7 +227,7 @@ class Hikvision(Company):
                 self.error_message = "בעיית תקשורת/בעיית קליטה"
             else:
                 print(f"An exception occurred: {e}")
-                self.error_message = "בעיית צד פיתוח"
+                self.error_message = "בעיית צד פיתוח הרכשות"
 
     def _handle_retry_request(self):
         retry_xml_body = self._get_request_params(index=0, model=self.model, is_retry=True)
@@ -238,24 +238,45 @@ class Hikvision(Company):
             timeout=self.timeout
         )
         if response.ok:
-            self._parse_data_response(response)
+            self._parse_data_response_model_1(response)
 
-    def _parse_data_response(self, response):
-        data = parse_text_to_dict(xmltodict.parse(response.text))["TrafficSearchResult"]
+    def _parse_data_response_model_1(self, response):
+        data = parse_text_to_dict(xmltodict.parse(response.text))
+        data = data["TrafficSearchResult"]
         total_matches = data["totalMatches"]
         self.captures["num_captures"] = total_matches
 
-    def _get_data_model_2(self):
-        xml_body = self._get_request_params(index=0, model=2)
-        response = self.session.post(f"{self._prefix_isapi}/ContentMgmt/search", auth=self.site.credentials,
-                                     data=xml_body,
-                                     timeout=self.timeout)
+    def _parse_data_response_model_2(self, response):
+        data = parse_text_to_dict(xmltodict.parse(response.text))
+        data = data["CMSearchResult"]
+        return data["numOfMatches"], data["responseStatusStrg"]
+        # TODO: Do while til
 
-        if response.ok:
-            x = 1
-        # TODO: Add logic when add more cameras
+    def _get_data_model_2(self):
+        self.error_message = "מודל זה בטיפול"
+        # total_matches = 0
+        # xml_body = self._get_request_params(index=0, model=2)
+        # response = self.session.post(f"{self._prefix_isapi}/ContentMgmt/search", auth=self.site.credentials,
+        #                              data=xml_body,
+        #                              timeout=self.timeout)
+        #
+        # if response.ok:
+        #     num_matches, flag = self._parse_data_response_model_2(response)
+        #     total_matches += int(num_matches)
+        #     while flag == "MORE":
+        #         xml_body = self._get_request_params(index=total_matches, model=2)
+        #         response = self.session.post(f"{self._prefix_isapi}/ContentMgmt/search",
+        #                                      auth=self.site.credentials,
+        #                                      data=xml_body,
+        #                                      timeout=self.timeout)
+        #         if response.ok:
+        #             num_matches, flag = self._parse_data_response_model_2(response)
+        #             total_matches += int(num_matches)
+        #             print(total_matches)
+        #     x=1
 
     def _get_data_model_3(self):
+        print("model 3 get captures")
         xml_body = self._get_request_params(index=0, model=4)
         response = self.session.post(f"{self._prefix_psia}/Custom/SelfExt/ContentMgmt/Traffic/Search",
                                      auth=self.site.credentials,
@@ -280,7 +301,8 @@ class Hikvision(Company):
             yesterday = current_time - timedelta(days=1)
             start_time = yesterday.strftime("%Y-%m-%dT22:00:00Z")
             end_time = yesterday.strftime("%Y-%m-%dT23:00:00Z")
-
+        start_time = "2025-01-21T05:00:00Z"
+        end_time = "2025-01-21T10:00:00Z"
         data_request_xml = get_body_by_model(
             model=model,
             index=index,
