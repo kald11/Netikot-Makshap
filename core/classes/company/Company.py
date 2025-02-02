@@ -1,11 +1,18 @@
 from abc import ABC, abstractmethod
+
+import requests
+
 from utils.network_helpers import ping
 
 
 class Company(ABC):
     def __init__(self, company_name, site):
         self.site = site
+        self.session = requests.Session()
+        self.username = self.site.config["project_setup"]["username"]
+        self.password = self.site.nvr.password
         self.company_name = company_name
+        self.timeout = self.site.config["project_setup"]["times"]["timeout_ping"]
         self.flags = {"login_ok": False, "is_cam_ping": False, "is_nvr_ping": False}
         self.captures = {"num_captures": "", "last_time_captures": ""}
         self.times = {"check_time": "", "current_camera_time": "", "is_synchronized": False}

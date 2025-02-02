@@ -51,3 +51,4 @@ class GoogleSheets:
     def upload_data(self, data):
         start_cell = "A2"
         self.output_worksheet.update(start_cell, data)
+

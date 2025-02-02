@@ -25,7 +25,7 @@ class NetikotService:
 
     def get_camera_data(self):
         self._get_captures()
-        #self._get_camera_time()
+        # self._get_camera_time()
 
     def unknowns(self):
         print("-------------- Unknowns is starting -------------------")
@@ -44,7 +44,7 @@ class NetikotService:
 
     def login_cameras(self):
         def worker(camera):
-            if camera.flags["is_nvr_ping"] and camera.company_name == "Hikvision":
+            if camera.flags["is_nvr_ping"]:
                 camera.try_login()
 
         use_thread(self.cameras_array, worker)
@@ -54,7 +54,7 @@ class NetikotService:
 
     def _get_captures(self):
         def worker(camera):
-            if camera.flags["login_ok"] and camera.site.camera_id != "אווירה" and camera.company_name == "Hikvision":
+            if camera.flags["login_ok"] and camera.site.camera_id != "אווירה":
                 camera.get_captures()
 
         use_thread(self.cameras_array, worker)

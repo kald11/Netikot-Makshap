@@ -39,11 +39,11 @@ def _init_classes(row):
 
 
 def _check_company(row, site):
-    if row["Company"] == "Dahua":
+    if row["Company"].lower().strip() == "dahua":
         item = Dahua(site)
-    elif row["Company"] == "Hikvision":
+    elif row["Company"].lower().strip() == "hikvision":
         item = Hikvision(site)
     else:
-        print(f"Unknown company: {row['Company']}, for site: {row['site_name']} (ID: {row['id']})")
+        print(f"Unknown company: {row['Company']}, for site: {row['Site Name']} (Ip: {row['IP Address']}) NUMBER: {row['Camera Number']}")
         item = None
     return item

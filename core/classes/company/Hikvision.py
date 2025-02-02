@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 
 import pytz
+import requests
 from requests.exceptions import ConnectionError
 from utils.utils import get_body_by_model
-import requests
 import xmltodict
 from core.classes.company.Company import Company
 
@@ -16,11 +16,7 @@ class Hikvision(Company):
         super().__init__("Hikvision", site=site)
         self._prefix_isapi = f"{self.site.prot}://{self.site.ip}:{self.site.nvr.port}/ISAPI"
         self._prefix_psia = f"{self.site.prot}://{self.site.ip}:{self.site.nvr.port}/PSIA"
-        self.session = requests.Session()
         self.device_info = None
-        self.timeout = self.site.config["project_setup"]["times"]["timeout_ping"]
-        self.username = self.site.config["project_setup"]["username"]
-        self.password = self.site.nvr.password
         self.model = None
 
     def try_login(self):
@@ -301,8 +297,7 @@ class Hikvision(Company):
             yesterday = current_time - timedelta(days=1)
             start_time = yesterday.strftime("%Y-%m-%dT22:00:00Z")
             end_time = yesterday.strftime("%Y-%m-%dT23:00:00Z")
-        start_time = "2025-01-21T05:00:00Z"
-        end_time = "2025-01-21T10:00:00Z"
+
         data_request_xml = get_body_by_model(
             model=model,
             index=index,
