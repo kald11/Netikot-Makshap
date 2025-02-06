@@ -10,8 +10,6 @@ class NetikotService:
         self.cameras_array = cameras_array
 
     def ping(self):
-        print("-------------- Ping is starting -------------------")
-        start = time.perf_counter()
 
         def worker(camera):
             camera.ping_camera()
@@ -19,28 +17,20 @@ class NetikotService:
 
         use_thread(self.cameras_array, worker)
 
-        end = time.perf_counter()
-        execution_time = end - start
-        print(f"----------------------- Ping sites ends in {execution_time:.6f} seconds ------------------------------")
-
     def get_camera_data(self):
         self._get_captures()
-        # self._get_camera_time()
+        self._get_camera_time()
 
     def unknowns(self):
-        print("-------------- Unknowns is starting -------------------")
-        start = time.perf_counter()
 
         def worker(camera):
-            if camera.flags["login_ok"] and camera.site.camera_id != "אווירה":
+            if camera.flags[
+                "login_ok"] and camera.site.camera_id != "אווירה" and camera.site.camera_type != "נתיקות -טרמי" \
+                    and camera.site.camera_type != "PTZ טרמי - נתיקות" and camera.company_name == "Hikvision":
                 camera.check_unknowns("morning")
                 camera.check_unknowns("night")
 
         use_thread(self.cameras_array, worker)
-
-        end = time.perf_counter()
-        execution_time = end - start
-        print(f"----------------------- Unknowns ends in {execution_time:.6f} seconds ------------------------------")
 
     def login_cameras(self):
         def worker(camera):
@@ -54,7 +44,8 @@ class NetikotService:
 
     def _get_captures(self):
         def worker(camera):
-            if camera.flags["login_ok"] and camera.site.camera_id != "אווירה":
+            if camera.site.camera_id != "אווירה" and camera.site.camera_type != "נתיקות -טרמי" \
+                    and camera.site.camera_type != "PTZ טרמי - נתיקות":
                 camera.get_captures()
 
         use_thread(self.cameras_array, worker)

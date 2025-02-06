@@ -7,4 +7,4 @@ class Camera(NetworkComponent):
         self.number = number
 
     def __str__(self):
-        return f"Camera( port={self.port}, password={self.password}, number={self.number}"
+        return f"Camera(port={self.port}, password={self.password}, number={self.number}"

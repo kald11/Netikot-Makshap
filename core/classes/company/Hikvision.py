@@ -49,7 +49,7 @@ class Hikvision(Company):
 
     def get_camera_time(self):
         try:
-            self._define_check_time()
+            self.define_check_time()
             if self.device_info in [('TS-5012-F', 4), ("DS-TP50-12DT", 4)]:
                 res = self.session.get(f"{self._prefix_psia}/System/time", auth=self.site.credentials,
                                        timeout=self.timeout)
@@ -58,7 +58,7 @@ class Hikvision(Company):
                 res = self.session.get(f"{self._prefix_isapi}/System/time", auth=self.site.credentials,
                                        timeout=self.timeout)
                 self.times["current_camera_time"] = self._extract_date(res)
-            self._compare_between_dates()
+            self.compare_between_dates()
         except Exception as e:
             # TODO: handle timeout exception exception
             pass
@@ -111,26 +111,12 @@ class Hikvision(Company):
                 else:
                     self.model = 2
 
-    def _define_check_time(self):
-        format = self.site.config["project_setup"]["format_datetime"]
-        current_time = datetime.now().strftime(format)
-        self.times["check_time"] = current_time
-
     def _extract_date(self, response):
         if response.status_code != 200:
             return ""
         data = response.text
         current_time_camera = parse_text_to_dict(xmltodict.parse(data))["Time"]["localTime"].replace('T', ' ')[:-6]
         return current_time_camera
-
-    def _compare_between_dates(self):
-        if self.times["current_camera_time"] == "" or self.times["check_time"] == "":
-            return
-        time_diff = self.site.config["project_setup"]["times"]["check_minutes_diff"]
-        camera_time = datetime_format(self.times["current_camera_time"])
-        current_time = datetime_format(self.times["check_time"])
-        diff = abs(camera_time - current_time)
-        self.times["is_synchronized"] = diff < timedelta(minutes=time_diff)
 
     def get_captures(self):
         match self.model:
@@ -146,6 +132,7 @@ class Hikvision(Company):
         Check unknown plates for the specified time period ('morning' or 'night').
         """
         try:
+            result = ""
             total_matches = self._get_total_matches(time_period)
             if self.model == 1 and total_matches > 1:
                 unknown_count = self._count_unknown_plates(total_matches, time_period)
@@ -153,10 +140,7 @@ class Hikvision(Company):
 
             elif total_matches <= 1:
                 result = "0/0"
-            if time_period == "morning":
-                self.unknown_morning = result
-            elif time_period == "night":
-                self.unknown_night = result
+            self.unknowns[time_period] = result
 
         except Exception as error:
             if isinstance(error, ConnectionError):

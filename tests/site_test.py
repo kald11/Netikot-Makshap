@@ -1,11 +1,12 @@
 from core.google_sheets import GoogleSheets
+from main import service
 
 gs = GoogleSheets()
-site = gs.get_row(479)
+site = gs.get_row(453)
 site.flags["is_nvr_ping"] = True
+# site.try_login()
 
-site.try_login()
-site.get_captures()
+service.get_camera_data()
 
 
 

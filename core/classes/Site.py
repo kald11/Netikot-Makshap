@@ -3,7 +3,7 @@ from requests.auth import HTTPDigestAuth
 
 
 class Site:
-    def __init__(self, site_name, ip, camera, nvr, modem, brigade, camera_id):
+    def __init__(self, site_name, ip, camera, nvr, modem, brigade, camera_id, camera_type):
         self.config = Config().get_config()
         self.prot = "http"
         self.site_name = site_name
@@ -11,7 +11,7 @@ class Site:
         self.camera = camera
         self.nvr = nvr
         self.modem = modem
-
+        self.camera_type = camera_type
         self.brigade = brigade
         self.camera_id = camera_id
         self.credentials = HTTPDigestAuth(self.config["project_setup"]["username"], nvr.password)

@@ -69,15 +69,15 @@ class Dahua(Company):
         except Exception as e:
             print("Failed to get captures with error: {}".format(e))
 
-    # def get_camera_time(self):
-    #     if self.flags["login_ok"]:
-    #         url = f"/RPC2"
-    #         r = self.rpc_request(url=url, method='global.getCurrentTime', params=None)
-    #         if r['result']:
-    #             current_time = r['params']['time']
-    #             current_time = datetime.strptime(current_time, '%Y-%m-%d %H:%M:%S')
-    #             return current_time
-    #     return DEFAULT_DATETIME
+    def get_camera_time(self):
+        try:
+            if self.flags["login_ok"]:
+                url = f"{self._prefix_url}/RPC2"
+                r = self._rpc_request(url=url, method='global.getCurrentTime', params=None)
+                if r['result']:
+                    self._parse_current_time(r)
+        except Exception as e:
+            print(f"Failed to get camera time with error: {e}")
 
     def _rpc_request(self, url, method, params, add_data={}):
         # Make a RPC request
@@ -103,7 +103,7 @@ class Dahua(Company):
         return factory
 
     def _can_start_captures(self, factory):
-        end_date, start_date = self._check_times()
+        end_date, start_date = self._check_times_captures()
         r = requests.get(
             f'{self._api_url}/mediaFileFind.cgi?action=findFile&object={factory}&condition.Channel={self.site.camera.number}&condition.StartTime={start_date}' +
             f'&condition.EndTime={end_date}&condition.Types[0]=jpg', auth=self.site.credentials,
@@ -145,8 +145,14 @@ class Dahua(Company):
             factory = data[0].split('=')[1]
             self.media_find_object_id = data
 
-    def _check_times(self):
+    def _check_times_captures(self):
         current_time_israel = datetime.now(pytz.timezone("Asia/Jerusalem"))
         start_time = datetime.strftime(current_time_israel, '%Y-%m-%d %H:%M:%S')
         end_time = datetime.strftime(current_time_israel - timedelta(hours=4), '%Y-%m-%d %H:%M:%S')
         return start_time, end_time
+
+    def _parse_current_time(self, r):
+        current_time = r['params']['time']
+        self.times["current_camera_time"] = current_time
+        self.define_check_time()
+        self.compare_between_dates()

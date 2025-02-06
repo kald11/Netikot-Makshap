@@ -13,8 +13,8 @@ def get_results_array(cameras_array):
                               camera.site.camera_id, camera.company_name, "V" if camera.flags["is_cam_ping"] else "X",
                               "V" if camera.flags["is_nvr_ping"] else "X", camera.captures["num_captures"],
                               camera.error_message,
-                              camera.unknown_morning,
-                              camera.unknown_night,
+                              camera.unknowns["morning"],
+                              camera.unknowns["night"],
                               camera.times["current_camera_time"],
                               camera.times["check_time"], camera.times["is_synchronized"]])
     return results_array
@@ -24,7 +24,8 @@ def convert_to_sites_array(df):
     data = []
     for index, row in df.iterrows():
         camera, nvr, modem = _init_classes(row)
-        site = Site(row["Site Name"], row["IP Address"], camera, nvr, modem, row["Brigade"], row["Camera Id"])
+        site = Site(row["Site Name"], row["IP Address"], camera, nvr, modem, row["Brigade"], row["Camera Id"],
+                    row["Camera Type"])
         item = _check_company(row, site)
         if item is not None:
             data.append(item)
@@ -44,6 +45,7 @@ def _check_company(row, site):
     elif row["Company"].lower().strip() == "hikvision":
         item = Hikvision(site)
     else:
-        print(f"Unknown company: {row['Company']}, for site: {row['Site Name']} (Ip: {row['IP Address']}) NUMBER: {row['Camera Number']}")
+        print(
+            f"Unknown company: {row['Company']}, for site: {row['Site Name']} (Ip: {row['IP Address']}) NUMBER: {row['Camera Number']}")
         item = None
     return item

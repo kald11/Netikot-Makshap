@@ -1,4 +1,5 @@
 import threading
+import time
 import uuid
 from collections import OrderedDict
 from datetime import datetime
@@ -158,3 +159,14 @@ def get_body_by_model(model, index, start_time, end_time, camera_number, is_retr
                         <searchResultPostion>{index}</searchResultPostion>
                         <maxResults>5000</maxResults>
                     </CMSearchDescription>'''
+
+
+# ----------------------- Formats ----------------------------------
+def execution_time(func, func_name):
+    print(f"-------------- {func_name} is starting -------------------")
+    start = time.perf_counter()
+    result = func()
+    end = time.perf_counter()
+    execution_time = end - start
+    print(f"----------------------- {func_name} ends in {execution_time:.6f} seconds ------------------------------")
+    return result
