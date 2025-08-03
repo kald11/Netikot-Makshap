@@ -1,7 +1,10 @@
 gspread==6.1.4
 pandas==2.2.3
-
 requests~=2.32.3
 xmltodict~=0.14.2
 PyYAML~=6.0.2
 pytz~=2024.2
+opencv-python~=4.11.0.86
+urllib3~=2.2.3
+PyQt6~=6.8.1
+selenium~=4.28.1

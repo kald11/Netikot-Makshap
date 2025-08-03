@@ -3,9 +3,9 @@ from requests.auth import HTTPDigestAuth
 
 
 class Site:
-    def __init__(self, site_name, ip, camera, nvr, modem, brigade, camera_id, camera_type):
+    def __init__(self, site_name, ip, camera, nvr, modem, brigade, camera_id, camera_type, prot, longitude, latitude):
         self.config = Config().get_config()
-        self.prot = "http"
+        self.prot = "https" if prot.upper() == "V" else "http"
         self.site_name = site_name
         self.ip = ip
         self.camera = camera
@@ -15,6 +15,9 @@ class Site:
         self.brigade = brigade
         self.camera_id = camera_id
         self.credentials = HTTPDigestAuth(self.config["project_setup"]["username"], nvr.password)
+        self.credentials_camera = HTTPDigestAuth(self.config["project_setup"]["username"], camera.password)
+        self.longitude = longitude
+        self.latitude = latitude
 
     def get_camera_url(self):
         return f'{self.prot}://{self.ip}:{self.camera.port}'

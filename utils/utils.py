@@ -2,13 +2,17 @@ import threading
 import time
 import uuid
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timedelta
+
+import pytz
+
 from config.settings import Config
 import pandas as pd
 
 
 # ----------------------- Arrays and df functions -----------------------
 def columns_to_rows_array(columns):
+    pad_lists(columns)
     return [list(row) for row in zip(*columns)]
 
 
@@ -35,6 +39,18 @@ def parse_text_to_dict(d):
     return d
 
 
+def pad_lists(lists):
+    max_length = max(len(lst) for lst in lists)
+    for i in range(len(lists)):
+        while len(lists[i]) < max_length:
+            lists[i].append('')
+    return lists
+
+
+def build_index_map(index_list):
+    return {i + 1: idx for i, idx in enumerate(index_list)}
+
+
 # ----------------------- Threads functions -----------------------
 def use_thread(cameras_array, worker):
     threads = []
@@ -50,6 +66,27 @@ def use_thread(cameras_array, worker):
 
 
 # ----------------------- Formats ----------------------------------
+def get_captures_times(type=None):
+    format = "%Y-%m-%dT%H:%M:%SZ"
+    jerusalem_tz = pytz.timezone('Asia/Jerusalem')
+    current_time = datetime.now(jerusalem_tz)
+    match type:
+        case "morning":
+            start_time = current_time.strftime("%Y-%m-%dT10:00:00Z")
+            end_time = current_time.strftime("%Y-%m-%dT11:00:00Z")
+        case "night":
+            yesterday = current_time - timedelta(days=1)
+            start_time = yesterday.strftime("%Y-%m-%dT22:00:00Z")
+            end_time = yesterday.strftime("%Y-%m-%dT23:00:00Z")
+        case "24_hours":
+            start_time = (current_time - timedelta(hours=24)).strftime(format)
+            end_time = current_time.strftime(format)
+        case None:
+            start_time = (current_time - timedelta(hours=3)).strftime(format)
+            end_time = current_time.strftime(format)
+    return start_time, end_time
+
+
 def datetime_format(local_time):
     format = Config().get_config()["project_setup"]["format_datetime"]
     return datetime.strptime(local_time, format)
@@ -71,7 +108,7 @@ def get_body_by_model(model, index, start_time, end_time, camera_number, is_retr
             <criteria>
                 <dataType>0</dataType>
                 <violationType>0</violationType>
-                <channel>1</channel>
+                <channel>{index}</channel>
                 <plateType/>
                 <plateColor/>
                 <direction/>
@@ -162,11 +199,18 @@ def get_body_by_model(model, index, start_time, end_time, camera_number, is_retr
 
 
 # ----------------------- Formats ----------------------------------
-def execution_time(func, func_name):
-    print(f"-------------- {func_name} is starting -------------------")
+def execution_time(func, func_name, status_callback=None,*args):
+    if status_callback:
+        status_callback(func_name, started=True)
+
     start = time.perf_counter()
-    result = func()
+    result = func(*args)
     end = time.perf_counter()
-    execution_time = end - start
-    print(f"----------------------- {func_name} ends in {execution_time:.6f} seconds ------------------------------")
+
+    duration = end - start
+
+    if status_callback:
+        status_callback(func_name, started=False, finished=True, duration=duration)
+
     return result
+
