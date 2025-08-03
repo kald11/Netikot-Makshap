@@ -1,3 +1,4 @@
 .idea/
 __pycache__/
-*.pyc
+*.pycconfig/gspread/creds.json
+/logs
