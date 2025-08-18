@@ -20,7 +20,7 @@ class Company(ABC):
         self.flags = {"login_ok": False, "login_camera_ok": False, "is_camera_ping": False, "is_nvr_ping": False}
         self.captures = {"num_captures": "", "last_time_captures": "","playback": "", "num_captures_per_day": ""}
         self.times = {"check_time": "", "current_camera_time": "", "current_nvr_time": "",
-                      "is_camera_synchronized": "Error occurred", "is_nvr_synchronized": "Error occurred"}
+                      "is_camera_synchronized": "Unknown error occurred", "is_nvr_synchronized": "Unknown error occurred"}
         self.unknowns = {"morning": unknown_morning, "night": unknown_night}
         self.error_message = ""
         self.index = index + 2
@@ -46,11 +46,11 @@ class Company(ABC):
         match type:
             case "camera":
                 if not self.flags["login_camera_ok"]:
-                    self.times['is_camera_synchronized'] = "error with camera"
+                    self.times['is_camera_synchronized'] = "אין אפשרות להיכנס למצלמה"
                     return
             case "nvr":
                 if not self.flags["login_ok"]:
-                    self.times['is_nvr_synchronized'] = "error with nvr"
+                    self.times['is_nvr_synchronized'] = "אין אפשרות להיכנס לnvr"
                     return
 
         if self.times[f"current_{type}_time"] == "" or self.times["check_time"] == "":

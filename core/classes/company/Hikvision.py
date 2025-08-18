@@ -75,7 +75,7 @@ class Hikvision(Company):
             self.handle_time_res(type, res)
 
         except Exception as e:
-            self.times[f"is_{type}_synchronized"] = f'אין אפשרות לגשת לאתר של {type}'
+            self.times[f"is_{type}_synchronized"] = f'אין אפשרות להיכנס ל{type}'
             handle_exception(e, self, f'{type} time error')
 
     def handle_time_res(self, type, res):

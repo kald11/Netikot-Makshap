@@ -65,22 +65,33 @@ class Dahua(Company):
             match type:
                 case "camera":
                     if not self.flags["login_camera_ok"]:
-                        self.times['is_camera_synchronized'] = "error with camera"
+                        self.times['is_camera_synchronized'] = "אין אפשרות להיכנס לcamera"
                         self.define_check_time()
                         return
                 case "nvr":
                     if not self.flags["login_ok"]:
-                        self.times['is_nvr_synchronized'] = "error with nvr"
+                        self.times['is_nvr_synchronized'] = "אין אפשרות להיכנס לnvr"
                         self.define_check_time()
                         return
             #if self.flags[f"login{'_camera' if type == 'camera' else ''}_ok"]:
             url = f'{self.site.prot}://{self.site.ip}:{getattr(self.site, type).port}/RPC2'
-            r = self._rpc_request(url=url, method='global.getCurrentTime', type=type, params=None)
+            r, status_code = self._rpc_request(url=url, method='global.getCurrentTime', type=type, params=None)
 
-            if r['result']:
+            if r.status_code != 200:
+                match status_code:
+                    case 401:
+                        self.times[f"is_{type}_synchronized"] = f"אין הרשאה - שם משתמש או סיסמה שגויים ({type})"
+                    case 403:
+                        self.times[f"is_{type}_synchronized"] = f"אין הרשאה לגשת למשאב זה ({type})"
+                    case 404:
+                        self.times[f"is_{type}_synchronized"] = "כתובת לא קיימת"
+                    case _:
+                        self.times[f"is_{type}_synchronized"] = f'{status_code} unknown error'
+            elif r.status_code == 200 and ['result']:
                 self._parse_current_time(r, type)
 
         except Exception as e:
+            self.times[f"is_{type}_synchronized"] = f'אין אפשרות להיכנס ל{type}'
             handle_exception(e, self, "camera time")
 
     def check_playback(self):
@@ -107,9 +118,9 @@ class Dahua(Company):
         r = self.session.post(url, json=data, timeout=self.timeout)  # Fixed indentation
 
         if r.ok:
-            return r.json()
+            return r.json(), r.status_code
         else:
-            return None
+            return r.status_code
 
     # Private functions for capturing
     def _create_factory(self):
