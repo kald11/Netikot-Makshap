@@ -1,0 +1,42 @@
+google_sheets:
+  service_account_path: "config\\gspread\\creds.json"
+  spreadsheet_name: "Netikot input"
+  input:
+    worksheet_name: "dc data"
+    desired_column_names: [ "Brigade","Site Name","IP Address","Company","Camera Port","Camera Password","NVR Port","NVR Password","Modem Port","Modem Password",'Camera Number',"Camera Id","Length","Latitude", "Camera Type", "HTTPS","Unknowns Night (22-23)","Unknowns Morning (10-11)"]
+    modem_columns: ["Site Name","IP", "Port", "Password"]
+  output:
+    worksheet_name: "Results"
+    desired_column_names: ["Camera Id", "Unknowns Morning (10-11)","Unknowns Night (22-23)"]
+
+project_setup:
+  times:
+      check_minutes_diff: 5
+      timeout_ping: 30
+      checkup_captures_hours: 4
+      checkup_aluf_condition_assessment_captures_hours: 24
+  username: "admin"
+  format_datetime: '%Y-%m-%d %H:%M:%S'
+
+palestinians_plate:
+  first_letter:
+    A: "ג'נין"
+    B: "טולכרם"
+    C: "טובאס"
+    D: "שכם"
+    E: "קלקיליה"
+    F: "סלפית"
+    G: "יריחו"
+    H: "רמאללה"
+    J: "אלעיזריה"
+    K: "בית לחם"
+    L: "חברון"
+    M: "דורא"
+    N: "יטא"
+    P: "חלחול"
+
+  second_letter:
+    B: "אוטובוס"
+    E: "רכב נכה"
+    R: "רכב שכור"
+    T: "מונית"
