@@ -5,7 +5,7 @@ from datetime import datetime
 from config.settings import Config
 import gspread
 from utils.utils import columns_to_rows_array, array_to_df
-from utils.parse_site import convert_to_sites_array
+from utils.parse_site import convert_to_sites_array, convert_to_sites_array_test
 import os
 
 
@@ -23,7 +23,9 @@ class GoogleSheets:
             filename=service_account_path)
         spread_sheet = connection.open(self.config["google_sheets"]["spreadsheet_name"])
         self.input_worksheet = spread_sheet.worksheet(self.config["google_sheets"]["input"]["worksheet_name"])
+        self.input_worksheet_test = spread_sheet.worksheet(self.config["google_sheets"]["input"]["worksheet_name_test"])
         self.output_worksheet = spread_sheet.worksheet(self.config["google_sheets"]["output"]["worksheet_name"])
+        self.output_worksheet_test = spread_sheet.worksheet(self.config["google_sheets"]["output"]["worksheet_name_test"])
         self.daily_worksheet = spread_sheet.worksheet("הרכשות יומי")
         self.modem_worksheet = spread_sheet.worksheet("modem")
 
@@ -39,6 +41,19 @@ class GoogleSheets:
         df = array_to_df(rows)
         sites = convert_to_sites_array(df)
         # self.append_previous_unknowns(sites)
+        return sites
+
+    def get_data_test(self):
+        col_names = self.config["google_sheets"]["input"]["desired_column_names_test"]
+        columns = (
+                [self.input_worksheet_test.col_values(i) for i in
+                 self._convert_column_names_to_indexes(self.input_worksheet_test, col_names)]
+                + [self.output_worksheet_test.col_values(i) for i in
+                   self._convert_column_names_to_indexes(self.output_worksheet_test, col_names[-2:])]
+        )
+        rows = columns_to_rows_array(columns)
+        df = array_to_df(rows)
+        sites = convert_to_sites_array_test(df)
         return sites
 
     def get_modem_data(self):
@@ -77,6 +92,15 @@ class GoogleSheets:
         time_difference = \
             str(end_time - datetime.strptime(start_time, self.config["project_setup"]["format_datetime"])).split(".")[0]
         self.output_worksheet.update("AE2:AG2", [
+            [start_time, end_time.strftime(self.config["project_setup"]["format_datetime"]), time_difference]])
+
+    def upload_data_test(self, data, start_time):
+        start_cell = "A2"
+        self.output_worksheet_test.update(start_cell, data)
+        end_time = datetime.now()
+        time_difference = \
+            str(end_time - datetime.strptime(start_time, self.config["project_setup"]["format_datetime"])).split(".")[0]
+        self.output_worksheet_test.update("AE2:AG2", [
             [start_time, end_time.strftime(self.config["project_setup"]["format_datetime"]), time_difference]])
 
     def append_previous_unknowns(self, devices):

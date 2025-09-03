@@ -2,12 +2,15 @@ google_sheets:
   service_account_path: "config\\gspread\\creds.json"
   spreadsheet_name: "Netikot input"
   input:
+    worksheet_name_test: "DEV"
     worksheet_name: "dc data"
     desired_column_names: [ "Brigade","Site Name","IP Address","Company","Camera Port","Camera Password","NVR Port","NVR Password","Modem Port","Modem Password",'Camera Number',"Camera Id","Length","Latitude", "Camera Type", "HTTPS","Unknowns Night (22-23)","Unknowns Morning (10-11)"]
+    desired_column_names_test: ["Check Time","Nvr Time","Camera Time","Unknowns Night (22-23)","Unknowns Morning (10-11)","Error Reason","Playback","Number Captures (4 hours)","Overall Ping","Ping NVR","Ping Camera","Company","Camera Id","Camera Number","IP Address","Site Name","Brigade","Latitude","Longitude","modem status","Example Picture","ftp2","ftp1","problems","proper","Model NVR","Nvr Time is synchronized"]
     modem_columns: ["Site Name","IP", "Port", "Password"]
   output:
-    worksheet_name: "Results"
+    worksheet_name: "DEV"
     desired_column_names: ["Camera Id", "Unknowns Morning (10-11)","Unknowns Night (22-23)"]
+    worksheet_name_test: "DEV-TEST"
 
 project_setup:
   times:

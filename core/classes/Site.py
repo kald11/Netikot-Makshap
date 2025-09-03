@@ -3,7 +3,7 @@ from requests.auth import HTTPDigestAuth
 
 
 class Site:
-    def __init__(self, site_name, ip, camera, nvr, modem, brigade, camera_id, camera_type, prot, longitude, latitude):
+    def __init__(self, site_name=None, ip=None, camera=None, nvr=None, modem=None, brigade=None, camera_id=None, camera_type=None, prot=None, longitude=None, latitude=None):
         self.config = Config().get_config()
         self.prot = "https" if prot.upper() == "V" else "http"
         self.site_name = site_name

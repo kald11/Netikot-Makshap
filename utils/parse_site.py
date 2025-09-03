@@ -1,11 +1,15 @@
 import site
 
+from core.classes.site_class_test import SiteTest
 from core.classes.Site import Site
 from core.classes.company.Dahua import Dahua
 from core.classes.company.Hikvision import Hikvision
 from core.classes.networkComponents.Camera import Camera
 from core.classes.networkComponents.Modem import Modem
 from core.classes.networkComponents.Nvr import Nvr
+
+from config.settings import Config
+config = Config().get_config()
 
 
 def get_results_array(cameras_array):
@@ -112,6 +116,41 @@ def convert_to_sites_array(df):
         if item is not None:
             data.append(item)
     return data
+
+def convert_to_sites_array_test(df):
+    sites = []
+    for _, row in df.iterrows():
+        site = SiteTest(
+            row["Check Time"],
+            row["Nvr Time"],
+            row["Camera Time"],
+            row["Unknowns Night (22-23)"],
+            row["Unknowns Morning (10-11)"],
+            row["Error Reason"],
+            row["Playback"],
+            row["Number Captures (4 hours)"],
+            row["Overall Ping"],
+            row["Ping NVR"],
+            row["Ping Camera"],
+            row["Company"],
+            row["Camera Id"],
+            row["Camera Number"],
+            row["IP Address"],
+            row["Site Name"],
+            row["Brigade"],
+            row["Latitude"],
+            row["Longitude"],
+            row["modem status"],
+            row["Example Picture"],
+            row["ftp2"],
+            row["ftp1"],
+            row["problems"],
+            row["proper"],
+            row["Model NVR"],
+            row["Nvr Time is synchronized"]
+        )
+        sites.append(site.to_dict())
+    return sites
 
 
 def _init_classes(row):

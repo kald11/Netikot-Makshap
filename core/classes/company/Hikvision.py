@@ -214,7 +214,7 @@ class Hikvision(Company):
         request_body = self._build_request_body(0, self.model, time_period)
         response = self._send_captures_request(request_body)
         if not response.ok:
-            request_body = self._build_request_body(0, self.model, time_period, True)
+            request_body = self._build_request_body(0, self.model, time_period, True, True)
             response = self._send_captures_request(request_body)
         return int(self._parse_total_matches(response))
 
@@ -245,8 +245,8 @@ class Hikvision(Company):
             'matchElement']
         return len([match for match in match_list if match["trafficData"]["plate"] == "unknown"])
 
-    def _build_request_body(self, offset, model, time_period, is_retry=False):
-        return self._get_request_params(offset, model, time_period, is_retry)
+    def _build_request_body(self, offset, model, time_period, is_retry=False, unknown=False):
+        return self._get_request_params(offset, model, time_period, is_retry,unknown)
 
     def _get_data_model_1(self, type=None):
         xml_body = self._get_request_params(index=0, model=1, type=type)
@@ -357,7 +357,7 @@ class Hikvision(Company):
         if response.ok:
             x = 1
 
-    def _get_request_params(self, index, model, type=None, is_retry=False):
+    def _get_request_params(self, index, model, type=None, is_retry=False, unknown=False):
         start_time, end_time = get_captures_times(type)
         data_request_xml = get_body_by_model(
             model=model,
@@ -365,7 +365,8 @@ class Hikvision(Company):
             start_time=start_time,
             end_time=end_time,
             camera_number=self.site.camera.number,
-            is_retry=is_retry
+            is_retry=is_retry,
+            unknown = unknown
         )
         return data_request_xml
 
